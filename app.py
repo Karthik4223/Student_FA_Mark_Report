@@ -15,6 +15,19 @@ def categorize_attendance(percentage):
 
 def main():
     st.title("Student FA Marks Report")
+    
+    # Add instructions for the required Excel format
+    st.markdown(
+        """
+        **📂 Excel File Requirements:**  
+        The uploaded file must contain the following columns:  
+        - `S.NO.`  
+        - `REGD.` (Registration Number)  
+        - `CGPA`  
+        - `Attendance` (as a percentage, e.g., `75%`)  
+        - `Test 1`, `Test 2`, `Test 3`, `Test 4`
+        """
+    )
 
     uploaded_file = st.file_uploader("Upload the Excel file", type=["xlsx"])
 
