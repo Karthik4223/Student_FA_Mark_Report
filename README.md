@@ -14,11 +14,11 @@ FA Marks Calculation: Sums up marks from Test 1, Test 2, Test 3, and Test 4.
 
 Performance Distribution: Generates a report showing the distribution of students across different attendance groups and FA mark ranges:
 
-<=20
->20 & <=40
->40 & <=60
->60 & <=70
->70 & <=80
+* <=10
+* >10 & <=20
+* >20 & <=30
+* >30 & <=40
+* >40 & <=60
 
 📂 File Upload Requirements
 Ensure the uploaded Excel file contains the following columns:
