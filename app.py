@@ -12,6 +12,16 @@ def categorize_attendance(percentage):
         return "≥50% - <65%"
     else:
         return "<50%"
+    
+def categorize_attendance_per(percentage):
+    if percentage >= 75:
+        return "75% and above"
+    elif 65 <= percentage < 75:
+        return "65–74%"
+    elif 50 <= percentage < 65:
+        return "50–64%"
+    else:
+        return "0–49%"
 
 def main():
     st.title("Student FA Marks Report")
@@ -47,6 +57,7 @@ def main():
         df["Attendance"] = df["Attendance"].apply(lambda x: float(str(x).strip('%')) if isinstance(x, str) and x.endswith('%') else x)
 
         # Add a category column
+        df['Attendance_Percents'] = df["Attendance"].apply(lambda x: x * 100)
         df["Group"] = df["Attendance"].apply(categorize_attendance)
 
         # Convert test marks to integers, handling missing values
@@ -63,7 +74,7 @@ def main():
 
         # Create a report structure
         attendance_ranges = ["≥75%", "≥65% - <75%", "≥50% - <65%", "<50%"]
-        columns = ["<=10", ">10 & <=20", ">20 & <=30", ">30 & <=40", ">40 & <=60", "Total"]
+        columns = ["<=10", ">10 & <=20", ">20 & <=30", ">30 & <=40", ">40 & <=50",">50 & <=60", "Total"]
 
         # Initialize report data with zeros
         report_data = {col: [0] * len(attendance_ranges) for col in columns}
@@ -81,8 +92,10 @@ def main():
                 column = ">20 & <=30"
             elif 30 < total_marks <= 40:
                 column = ">30 & <=40"
-            elif 40 < total_marks <= 60:
-                column = ">40 & <=60"
+            elif 40 < total_marks <= 50:
+                column = ">40 & <=50"
+            elif 50 < total_marks <= 60:
+                column = ">50 & <=60"
             else:
                 continue
 
@@ -99,6 +112,22 @@ def main():
         # Display the FA Marks Report
         st.write("### FA Marks Report")
         st.table(report_df)
+        
+        # Add attendance category
+        df["Attendance_Category"] = df["Attendance_Percents"].apply(categorize_attendance_per)
+
+        # Count students in each category
+        attendance_counts = df["Attendance_Category"].value_counts().reindex([
+            "0–49%", "50–64%", "65–74%", "75% and above"
+        ], fill_value=0)
+
+        # Display the report as a table
+        st.write("### Attendance Range Report")
+        report1_df = pd.DataFrame({
+            "Attendance Range": attendance_counts.index,
+            "No. of Students": attendance_counts.values
+        })
+        st.table(report1_df)
 
 if __name__ == "__main__":
     main()
