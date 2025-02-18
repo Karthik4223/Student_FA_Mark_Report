@@ -63,6 +63,7 @@ def main():
         # Convert test marks to integers, handling missing values
         for col in ["Test 1", "Test 2", "Test 3", "Test 4"]:
             df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0).astype(int)
+            df[col] = df[col].replace(-1, 0).astype(int)
 
         # Calculate total marks
         df["Total Marks"] = df[["Test 1", "Test 2", "Test 3", "Test 4"]].sum(axis=1).astype(int)
