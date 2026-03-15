@@ -166,7 +166,7 @@ def process_sheet(sheet_name, df, mode, original_filename):
     else: # Extended Mode
         test_1_4 = ["Test 1", "Test 2", "Test 3", "Test 4"]
         t_1_4 = ["T1", "T2", "T3", "T4"]
-        df["Total Marks"] = ((df[test_1_4].sum(axis=1) * (3/4)) + df[t_1_4].sum(axis=1)) / 2
+        df["Total Marks"] = (((df[test_1_4].sum(axis=1)) + df[t_1_4].sum(axis=1)) / 120 ) * 60
     
     # Ensure marks are integers for categorization
     df["Total Marks"] = df["Total Marks"].astype(int)
