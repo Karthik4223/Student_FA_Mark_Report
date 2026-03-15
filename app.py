@@ -8,7 +8,6 @@ from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet
 from docx import Document
 from docx.shared import Inches
-import math
 
 def categorize_attendance(percentage):
     percentage = percentage * 100
@@ -161,9 +160,9 @@ def process_sheet(sheet_name, df, mode, original_filename):
     # Calculate total marks (Your formula: (Sum/120)*60 for 8 tests, or (Sum/80)*60 for 4)
     raw_sum = df[test_columns].sum(axis=1)
     if mode == 'Standard':
-        df["Total Marks"] = math.ceil((raw_sum / 80) * 60)
+        df["Total Marks"] = np.ceil((raw_sum / 80) * 60)
     else:
-        df["Total Marks"] = math.ceil((raw_sum / 120) * 60)
+        df["Total Marks"] = np.ceil((raw_sum / 120) * 60)
     
     df["Total Marks"] = df["Total Marks"].astype(int)
 
