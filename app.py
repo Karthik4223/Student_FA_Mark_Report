@@ -105,11 +105,14 @@ def process_sheet(sheet_name, df, mode, original_filename):
     base_name = original_filename.rsplit('.', 1)[0] if '.' in original_filename else original_filename
     st.write(f"### Processing Sheet: {sheet_name} (from {original_filename})")
 
+    # Clean column names (handle trailing/leading spaces)
+    df.columns = [str(c).strip() for c in df.columns]
+
     # Required base columns
     base_columns = ["S.NO.", "REGD.", "CGPA", "Attendance"]
     missing_base = [c for c in base_columns if c not in df.columns]
     if missing_base:
-        st.error(f"The sheet '{sheet_name}' must contain the required base columns: {', '.join(missing_base)}")
+        st.error(f"❌ **Error:** Missing base columns: {', '.join(missing_base)}")
         return
 
     # Define test column sets
@@ -123,57 +126,65 @@ def process_sheet(sheet_name, df, mode, original_filename):
         has_t_1_4 = all(c in df.columns for c in t_1_4)
 
         if has_test_1_4 and has_t_1_4:
-            st.error(f"❌ **Conflict in Standard Mode:** Sheet '{sheet_name}' contains both `{', '.join(test_1_4)}` AND `{', '.join(t_1_4)}`. Please use **Extended Mode** to process all 8 columns, or remove one set for Standard Mode.")
+            st.error(f"❌ **Conflict:** Sheet '{sheet_name}' contains both sets. Use Extended Mode.")
             return
         elif has_test_1_4:
             test_columns = test_1_4
         elif has_t_1_4:
             test_columns = t_1_4
         else:
-            st.error(f"❌ **Standard Mode Error:** Sheet '{sheet_name}' must have either {', '.join(test_1_4)} OR {', '.join(t_1_4)}.")
+            st.error(f"❌ **Error:** Must have either {', '.join(test_1_4)} OR {', '.join(t_1_4)}.")
             return
     else: # Extended Mode
-        # In Extended Mode, strictly require all 8 columns
         required_extended = test_1_4 + t_1_4
-        missing_extended = [c for c in required_extended if c not in df.columns]
-        
-        if missing_extended:
-            st.error(f"❌ **Extended Mode Error:** Sheet '{sheet_name}' is missing columns: {', '.join(missing_extended)}. Only files with all 8 test columns are processed in this mode.")
+        missing_ext = [c for c in required_extended if c not in df.columns]
+        if missing_ext:
+            st.error(f"❌ **Error:** Missing columns for Extended mode: {', '.join(missing_ext)}")
             return
-        
         test_columns = required_extended
 
-    st.success(f"✅ Processing columns: {', '.join(test_columns)}")
+    st.success(f"✅ Ordered processing for columns: {', '.join(test_columns)}")
 
     # Drop duplicates based on student registration number
     df = df.drop_duplicates(subset="REGD.")
 
-    # Convert attendance to percentage if needed
+    # Convert attendance to percentage and tests to numeric
     df["Attendance"] = df["Attendance"].apply(lambda x: float(str(x).strip('%')) if isinstance(x, str) and x.endswith('%') else x)
-
-    # Add a category column
     df['Attendance_Percents'] = df["Attendance"].apply(lambda x: x * 100)
     df["Group"] = df["Attendance"].apply(categorize_attendance)
 
-    # Convert test marks to integers, handling missing values
     for col in test_columns:
         df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0).astype(int)
-        df[col] = df[col].replace(-1, 0).apply(lambda x: int(x))
+        df[col] = df[col].replace(-1, 0)
 
-    # Calculate total marks
+    # Calculate total marks (Your formula: (Sum/120)*60 for 8 tests, or (Sum/80)*60 for 4)
+    raw_sum = df[test_columns].sum(axis=1)
     if mode == 'Standard':
-        df["Total Marks"] = df[test_columns].sum(axis=1) * (3/4)
-    else: # Extended Mode
-        test_1_4 = ["Test 1", "Test 2", "Test 3", "Test 4"]
-        t_1_4 = ["T1", "T2", "T3", "T4"]
-        df["Total Marks"] = (((df[test_1_4].sum(axis=1)) + df[t_1_4].sum(axis=1)) / 120 ) * 60
+        df["Total Marks"] = (raw_sum / 80) * 60
+    else:
+        df["Total Marks"] = (raw_sum / 120) * 60
     
-    # Ensure marks are integers for categorization
     df["Total Marks"] = df["Total Marks"].astype(int)
 
-    # Display the entire data with total marks
-    st.write("### Student Data with Total Marks")
-    st.dataframe(df)
+    # Reorder columns for a clean display
+    display_order = ["REGD.", "S.NO.", "CGPA", "Attendance"] + test_columns + ["Total Marks", "Group"]
+    # Add any other unexpected columns to the end
+    other_cols = [c for c in df.columns if c not in display_order]
+    display_df = df[display_order + other_cols]
+
+    # Display clean data
+    st.write("### 📋 Processed Student Data")
+    st.dataframe(display_df)
+
+    # Option to download the full processed data
+    csv = display_df.to_csv(index=False).encode('utf-8')
+    st.download_button(
+        label="📥 Download Processed Data (CSV)",
+        data=csv,
+        file_name=f"{base_name}_{sheet_name}_Processed_Data.csv",
+        mime='text/csv',
+        key=f"csv_{sheet_name}"
+    )
 
     # Create a report structure
     attendance_ranges = ["≥75%", "≥65% - <75%", "≥50% - <65%", "<50%"]
