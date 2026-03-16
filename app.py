@@ -10,7 +10,7 @@ from docx import Document
 from docx.shared import Inches
 
 def categorize_attendance(percentage):
-    percentage = percentage * 100
+    # Input percentage is expected to be in 0-100 scale
     if percentage >= 75:
         return "≥75%"
     elif 65 <= percentage < 75:
@@ -148,9 +148,15 @@ def process_sheet(sheet_name, df, mode, original_filename):
     # Drop duplicates based on student registration number
     df = df.drop_duplicates(subset="REGD.")
 
-    # Convert attendance to percentage and tests to numeric
-    df["Attendance"] = df["Attendance"].apply(lambda x: float(str(x).strip('%')) if isinstance(x, str) and x.endswith('%') else x)
-    df['Attendance_Percents'] = df["Attendance"].apply(lambda x: x * 100)
+    # Convert attendance to numeric, handling '%' and strings
+    df["Attendance"] = df["Attendance"].apply(lambda x: float(str(x).replace('%', '').strip()) if isinstance(x, (str, float, int)) else x)
+    df["Attendance"] = pd.to_numeric(df["Attendance"], errors='coerce').fillna(0)
+
+    # Normalize to 0-100 scale if decimal format is used (e.g., 0.75 instead of 75)
+    if df["Attendance"].max() <= 1.0 and df["Attendance"].max() > 0:
+        df["Attendance"] = df["Attendance"] * 100
+    
+    df['Attendance_Percents'] = df["Attendance"]
     df["Group"] = df["Attendance"].apply(categorize_attendance)
 
     for col in test_columns:
